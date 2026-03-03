@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CRUD Usuários — S3 MVC</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="grid-bg"></div>
+
+  <div class="container">
+
+    <!-- ═══════════════════════════════════════════════════
+         HEADER
+         ═══════════════════════════════════════════════════ -->
+    <header>
+      <div class="logo">
+        <div class="logo-icon">👤</div>
+        <div class="logo-text">User<span>CRUD</span></div>
+      </div>
+      <div class="header-right">
+        <span class="badge badge-green">AWS S3</span>
+        <span class="badge badge-blue">MVC</span>
+        <span class="badge badge-purple">bcrypt</span>
+      </div>
+    </header>
+
+    <!-- ═══════════════════════════════════════════════════
+         TOOLBAR — Busca + Novo Usuário
+         ═══════════════════════════════════════════════════ -->
+    <div class="toolbar">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="Buscar por nome ou email..." />
+      </div>
+      <button id="novoBtn" class="btn btn-primary">➕ &nbsp; Novo Usuário</button>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════
+         TABELA DE USUÁRIOS
+         ═══════════════════════════════════════════════════ -->
+    <div class="card">
+      <div class="card-header">
+        <span class="dot"></span>
+        <span class="card-title">Usuários Cadastrados</span>
+        <span id="userCount" class="badge-count" style="display:none">0</span>
+      </div>
+      <div class="card-body">
+        <div id="tabelaBody"></div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════
+         MODAL — Cadastro / Edição
+         ═══════════════════════════════════════════════════ -->
+    <div id="userModal" class="modal-overlay">
+      <div class="modal">
+        <div class="modal-header">
+          <span id="modalTitle" class="modal-title">👤 Novo Usuário</span>
+          <button id="closeModalBtn" class="close-btn">✕</button>
+        </div>
+        <div class="modal-body">
+          <!-- Hidden fields -->
+          <input type="hidden" id="editId" />
+          <input type="hidden" id="editFotoKey" />
+
+          <!-- Foto de perfil -->
+          <div class="foto-upload-area">
+            <div class="foto-circle">
+              <img id="fotoPreview" src="" alt="Preview" />
+              <span id="fotoInitial" class="foto-initial">📷</span>
+              <input type="file" id="fotoInput" accept="image/*" />
+            </div>
+            <span class="foto-label">Foto de perfil (máx. 2 MB)</span>
+          </div>
+
+          <!-- Formulário -->
+          <div class="modal-form">
+            <div class="form-group">
+              <label>Nome <span class="req">*</span></label>
+              <input type="text" id="nomeInput" placeholder="Nome completo" />
+            </div>
+
+            <div class="form-group">
+              <label>Email <span class="req">*</span></label>
+              <input type="email" id="emailInput" placeholder="usuario@email.com" />
+            </div>
+
+            <div class="form-group">
+              <label>Senha <span class="req">*</span></label>
+              <input type="password" id="senhaInput" placeholder="Mínimo 6 caracteres *" />
+            </div>
+
+            <div class="form-group">
+              <label>Confirmar Senha <span class="req">*</span></label>
+              <input type="password" id="confirmarInput" placeholder="Repita a senha *" />
+            </div>
+
+            <div class="form-group">
+              <label>Telefone</label>
+              <input type="text" id="telefoneInput" placeholder="(00) 00000-0000" />
+            </div>
+
+            <div class="form-group full">
+              <label>Endereço</label>
+              <input type="text" id="enderecoInput" placeholder="Rua, número — Cidade, UF" />
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="cancelarBtn" class="btn btn-secondary">Cancelar</button>
+          <button id="salvarBtn" class="btn btn-primary">💾 &nbsp; Salvar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════
+         MODAL — Confirmar Exclusão
+         ═══════════════════════════════════════════════════ -->
+    <div id="deleteModal" class="modal-overlay">
+      <div class="modal" style="max-width:420px">
+        <div class="modal-header">
+          <span class="modal-title">🗑️ Confirmar Exclusão</span>
+          <button id="closeDeleteBtn" class="close-btn">✕</button>
+        </div>
+        <div class="delete-body">
+          <input type="hidden" id="deleteId" />
+          <input type="hidden" id="deleteFotoKey" />
+          <span class="delete-icon">⚠️</span>
+          <div class="delete-text">
+            Tem certeza que deseja excluir o usuário<br />
+            <strong id="deleteNome"></strong>?
+          </div>
+          <div class="delete-warn">Esta ação é irreversível. O JSON e a foto serão removidos do S3.</div>
+        </div>
+        <div class="modal-footer">
+          <button id="cancelDeleteBtn" class="btn btn-secondary">Cancelar</button>
+          <button id="confirmDeleteBtn" class="btn btn-danger">🗑️ &nbsp; Excluir</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════
+         LOADING OVERLAY
+         ═══════════════════════════════════════════════════ -->
+    <div id="loadingOverlay" class="loading-overlay">
+      <div class="spinner"></div>
+      <span class="loading-label">Processando...</span>
+    </div>
+
+    <!-- TOAST CONTAINER -->
+    <div id="toastContainer" class="toast-container"></div>
+
+  </div><!-- /.container -->
+
+  <!-- ═══════════════════════════════════════════════════
+       SCRIPTS — Ordem de carregamento:
+       1. AWS SDK v2 (global AWS)
+       2. bcryptjs (global dcodeIO.bcrypt)
+       3. aws-config.js (global AWS_CONFIG)
+       4. UserModel.js (class UserModel)
+       5. UserView.js (class UserView)
+       6. UserController.js (class UserController)
+       7. Bootstrap (instanciação)
+       ═══════════════════════════════════════════════════ -->
+  <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1472.0.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js"></script>
+  <script src="js/config/aws-config.js"></script>
+  <script src="js/model/UserModel.js"></script>
+  <script src="js/view/UserView.js"></script>
+  <script src="js/controller/UserController.js"></script>
+
+  <script>
+    /* ── Bootstrap: instancia as 3 camadas MVC ──────── */
+    const model      = new UserModel(AWS_CONFIG);
+    const view       = new UserView();
+    const controller = new UserController(model, view);
+  </script>
+</body>
+</html>
