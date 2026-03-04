@@ -120,7 +120,7 @@ header {
   color: var(--text);
   font-family: var(--mono);
   font-size: 12px;
-  padding: 10px 14px 10px 36px;
+  padding: 10px 14px 10px 42px; /* corrigido — 36px→42px para não sobrepor a lupa */
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
@@ -356,10 +356,11 @@ label {
 }
 label .req { color: var(--error); margin-left: 2px; }
 
-input[type="text"],
-input[type="email"],
-input[type="password"],
-textarea {
+/* corrigido — escopado ao .modal-form para não sobrescrever o padding do search input */
+.modal-form input[type="text"],
+.modal-form input[type="email"],
+.modal-form input[type="password"],
+.modal-form textarea {
   background: var(--bg);
   border: 1px solid var(--border2);
   border-radius: 8px;

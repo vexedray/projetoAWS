@@ -25,9 +25,10 @@ class UserController {
    * @param {UserView}  view
    */
   constructor(model, view) {
-    this.model    = model;
-    this.view     = view;
-    this._fotoUrls = {};
+    this.model      = model;
+    this.view       = view;
+    this._fotoUrls  = {};
+    this._carregando = false; // corrigido — guard contra renders concorrentes
     this.init();
   }
 
@@ -80,6 +81,13 @@ class UserController {
      ═══════════════════════════════════════════════════════ */
 
   async carregarLista() {
+    // corrigido — impede chamadas concorrentes que causavam conteúdo fantasma
+    if (this._carregando) return;
+    this._carregando = true;
+
+    // corrigido — limpa busca ao recarregar para evitar estado inconsistente
+    this.view.searchInput.value = '';
+
     this.view.renderTabelaLoading();
 
     try {
@@ -101,6 +109,8 @@ class UserController {
       this.view.showErro(`${resolved.title} — ${resolved.msg}`);
       this.view.renderTabela([], {});
       this.view.renderContador(0);
+    } finally {
+      this._carregando = false;
     }
   }
 
@@ -222,6 +232,9 @@ class UserController {
      ═══════════════════════════════════════════════════════ */
 
   _handleBuscar(query) {
+    // corrigido — ignora busca enquanto a lista está carregando do S3
+    if (this._carregando) return;
+
     const q = query.toLowerCase();
     const todos = this.model.users;
 
@@ -231,6 +244,13 @@ class UserController {
           u.email.toLowerCase().includes(q)
         )
       : todos;
+
+    // corrigido — empty-state de busca separado do empty-state de lista vazia
+    if (q && filtrados.length === 0) {
+      this.view.renderSemResultados(query);
+      this.view.renderContador(0);
+      return;
+    }
 
     this.view.renderTabela(filtrados, this._fotoUrls);
     this.view.renderContador(filtrados.length);

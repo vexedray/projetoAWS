@@ -164,6 +164,9 @@ class UserView {
    * @param {Object} fotoUrlMap  { id: signedUrl }
    */
   renderTabela(usuarios, fotoUrlMap = {}) {
+    // corrigido — limpa conteúdo anterior antes de renderizar (evita sobreposição)
+    this.tabelaBody.innerHTML = '';
+
     if (!usuarios || usuarios.length === 0) {
       this.tabelaBody.innerHTML =
         `<div class="empty-state">
@@ -214,7 +217,18 @@ class UserView {
       </table>`;
   }
 
+  // corrigido — estado vazio específico para busca sem resultados (não confunde com lista vazia)
+  renderSemResultados(query) {
+    this.tabelaBody.innerHTML =
+      `<div class="empty-state">
+        <span class="empty-icon">🔍</span>
+        <div class="empty-title">Nenhum resultado encontrado</div>
+        <div class="empty-sub">Nenhum usuário corresponde a "${this._esc(query)}".</div>
+      </div>`;
+  }
+
   renderTabelaLoading() {
+    // corrigido — limpa conteúdo anterior antes do spinner
     this.tabelaBody.innerHTML =
       `<div class="empty-state">
         <div class="spinner"></div>
