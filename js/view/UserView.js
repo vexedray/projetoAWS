@@ -8,6 +8,7 @@
    ✅  Renderiza tabela, modais, alertas, preview de foto
    ✅  Expõe bind*() para o Controller registrar handlers
    ✅  Máscara de telefone, preview de foto, filtro local
+   ✅  Não referencia UserModel — desacoplamento MVC
    ❌  NUNCA conhece o AWS SDK
    ❌  NUNCA acessa o Model diretamente
    ❌  Não contém lógica de negócio
@@ -64,6 +65,21 @@ class UserView {
     this._bindFotoPreview();
     this._bindMascaraTelefone();
     this._bindFecharModais();
+
+    // ✅ Handlers de ação da tabela (registrados pelo Controller via bind*)
+    this._onEditHandler   = null;
+    this._onDeleteHandler  = null;
+    this._bindTabelaDelegation();
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     UTILITÁRIOS INTERNOS DA VIEW
+     ═══════════════════════════════════════════════════════ */
+
+  // ✅ Movido para View — não depende mais de UserModel.getInitial()
+  _getInicial(nome) {
+    if (!nome) return '?';
+    return nome.trim().charAt(0).toUpperCase();
   }
 
   /* ═══════════════════════════════════════════════════════
@@ -103,7 +119,8 @@ class UserView {
    * @param {Function} handler  (id) => void
    */
   bindEditarClick(handler) {
-    window._onEditUser = (id) => handler(id);
+    // ✅ Event delegation — sem window globals
+    this._onEditHandler = handler;
   }
 
   /**
@@ -111,7 +128,8 @@ class UserView {
    * @param {Function} handler  (id, nome, fotoPerfil) => void
    */
   bindDeletarClick(handler) {
-    window._onDeleteUser = (id, nome, fotoPerfil) => handler(id, nome, fotoPerfil);
+    // ✅ Event delegation — sem window globals
+    this._onDeleteHandler = handler;
   }
 
   /**
@@ -159,24 +177,26 @@ class UserView {
     let rows = '';
     for (const u of usuarios) {
       const fotoUrl   = fotoUrlMap[u.id] || '';
-      const initial   = UserModel.getInitial(u.nome);
+      const initial   = this._getInicial(u.nome); // ✅ Usa método da View, não do Model
       const safeNome  = this._esc(u.nome);
       const safeEmail = this._esc(u.email);
-      const safeFotoKey = (u.fotoPerfil || '').replace(/'/g, "\\'");
+      const safeTel   = this._esc(u.telefone || '—'); // ✅ Escape no telefone
+      const safeFotoKey = this._esc(u.fotoPerfil || '');
 
       const avatarHtml = fotoUrl
         ? `<img class="avatar" src="${fotoUrl}" alt="${safeNome}" />`
         : `<div class="avatar avatar-fallback">${initial}</div>`;
 
+      // ✅ Event delegation via data-* — sem onclick inline, sem window globals
       rows +=
         `<tr>
           <td>${avatarHtml}</td>
           <td class="col-nome">${safeNome}</td>
           <td class="col-email">${safeEmail}</td>
-          <td class="col-telefone">${u.telefone || '—'}</td>
+          <td class="col-telefone">${safeTel}</td>
           <td class="col-actions">
-            <button class="btn btn-ghost btn-icon" onclick="window._onEditUser('${u.id}')" title="Editar">✏️</button>
-            <button class="btn btn-ghost btn-icon btn-icon-danger" onclick="window._onDeleteUser('${u.id}','${safeNome}','${safeFotoKey}')" title="Excluir">🗑️</button>
+            <button class="btn btn-ghost btn-icon" data-action="editar" data-id="${u.id}" title="Editar">✏️</button>
+            <button class="btn btn-ghost btn-icon btn-icon-danger" data-action="deletar" data-id="${u.id}" data-nome="${safeNome}" data-foto="${safeFotoKey}" title="Excluir">🗑️</button>
           </td>
         </tr>`;
     }
@@ -266,7 +286,7 @@ class UserView {
     } else {
       this.fotoPreview.style.display   = 'none';
       this.fotoInitial.style.display   = 'flex';
-      this.fotoInitial.textContent     = UserModel.getInitial(usuario.nome);
+      this.fotoInitial.textContent     = this._getInicial(usuario.nome); // ✅ View, não Model
     }
 
     this.clearValidation();
@@ -329,10 +349,21 @@ class UserView {
     this._toast('error', '🚨', msg);
   }
 
+  // ✅ Construção segura via DOM API — sem innerHTML com dados dinâmicos (previne XSS)
   _toast(type, icon, msg) {
     const el = document.createElement('div');
     el.className = `toast toast-${type}`;
-    el.innerHTML = `<span class="toast-icon">${icon}</span><span class="toast-msg">${msg}</span>`;
+
+    const iconSpan = document.createElement('span');
+    iconSpan.className = 'toast-icon';
+    iconSpan.textContent = icon;
+
+    const msgSpan = document.createElement('span');
+    msgSpan.className = 'toast-msg';
+    msgSpan.textContent = msg; // ✅ textContent — nunca innerHTML
+
+    el.appendChild(iconSpan);
+    el.appendChild(msgSpan);
     this.toastContainer.appendChild(el);
 
     // Auto-remove after 4s
@@ -419,5 +450,22 @@ class UserView {
     const div = document.createElement('div');
     div.textContent = str || '';
     return div.innerHTML;
+  }
+
+  // ✅ Event delegation na tabela — elimina onclick inline e window globals
+  _bindTabelaDelegation() {
+    this.tabelaBody.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-action]');
+      if (!btn) return;
+
+      const action = btn.dataset.action;
+      const id     = btn.dataset.id;
+
+      if (action === 'editar' && this._onEditHandler) {
+        this._onEditHandler(id);
+      } else if (action === 'deletar' && this._onDeleteHandler) {
+        this._onDeleteHandler(id, btn.dataset.nome, btn.dataset.foto);
+      }
+    });
   }
 }

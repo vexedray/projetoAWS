@@ -33,14 +33,8 @@ class UserModel {
   constructor(config) {
     this._config = { ...config };
     this._users  = [];
-    this._deleteTarget = null;
 
-    AWS.config.update({
-      accessKeyId:     config.accessKeyId,
-      secretAccessKey: config.secretAccessKey,
-      region:          config.region,
-    });
-
+    // ✅ Sem accessKeyId/secretAccessKey — Cognito já configurado em aws-config.js
     this._s3 = new AWS.S3({
       apiVersion: '2006-03-01',
       region:     config.region,
@@ -54,10 +48,6 @@ class UserModel {
   get bucket()       { return this._config.bucket; }
   get region()       { return this._config.region; }
   get users()        { return [...this._users]; }
-  get deleteTarget() { return this._deleteTarget; }
-
-  setDeleteTarget(val) { this._deleteTarget = val; }
-  clearDeleteTarget()  { this._deleteTarget = null; }
 
   /* ═══════════════════════════════════════════════════════
      UTILITÁRIOS
@@ -76,7 +66,12 @@ class UserModel {
   /** Key S3 da foto de perfil. */
   buildFotoKey(id, fileName) {
     const ext = fileName.split('.').pop().toLowerCase();
-    return `fotos/${id}.${ext}`;
+
+    // ✅ Sanitização: só extensões de imagem permitidas (bloqueia .svg, .html, etc.)
+    const EXTENSOES_PERMITIDAS = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+    const extSegura = EXTENSOES_PERMITIDAS.includes(ext) ? ext : 'bin';
+
+    return `fotos/${id}.${extSegura}`;
   }
 
   /** Retorna inicial maiúscula do nome (para avatar fallback). */
@@ -109,7 +104,13 @@ class UserModel {
    * @returns {Promise<string>}  Hash bcrypt
    */
   async hashSenha(senha) {
-    return dcodeIO.bcrypt.hashSync(senha, 10);
+    // ✅ Versão async — não bloqueia a main thread
+    return new Promise((resolve, reject) => {
+      dcodeIO.bcrypt.hash(senha, 10, (err, hash) => {
+        if (err) return reject(err);
+        resolve(hash);
+      });
+    });
   }
 
   /**
@@ -119,7 +120,13 @@ class UserModel {
    * @returns {Promise<boolean>}
    */
   async verificarSenha(senha, hash) {
-    return dcodeIO.bcrypt.compareSync(senha, hash);
+    // ✅ Versão async — não bloqueia a main thread
+    return new Promise((resolve, reject) => {
+      dcodeIO.bcrypt.compare(senha, hash, (err, result) => {
+        if (err) return reject(err);
+        resolve(result);
+      });
+    });
   }
 
   /* ═══════════════════════════════════════════════════════
@@ -136,11 +143,14 @@ class UserModel {
     return senha && senha.length >= 6;
   }
 
-  /** Valida arquivo de foto (tipo image/*, max 2MB). */
+  /** Valida arquivo de foto (MIME whitelist + max 2 MB). */
   validarFoto(file) {
     if (!file) return { valido: true };
-    if (!file.type.startsWith('image/')) {
-      return { valido: false, msg: 'Apenas arquivos de imagem são aceitos.' };
+
+    // ✅ Whitelist estrita de MIME types — bloqueia image/svg+xml, image/bmp, etc.
+    const TIPOS_PERMITIDOS = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!TIPOS_PERMITIDOS.includes(file.type)) {
+      return { valido: false, msg: 'Tipo não aceito. Permitidos: JPEG, PNG, WebP, GIF.' };
     }
     if (file.size > 2 * 1024 * 1024) {
       return { valido: false, msg: `Foto muito grande (${UserModel.formatBytes(file.size)}). Máximo: 2 MB.` };
@@ -344,11 +354,11 @@ class UserModel {
 
     await new Promise((resolve, reject) => {
       this._s3.putObject({
-        Bucket:      this.bucket,
-        Key:         key,
-        Body:        file,
-        ContentType: file.type,
-        ACL:         'private',
+        Bucket:               this.bucket,
+        Key:                  key,
+        Body:                 file,
+        ContentType:          file.type,
+        ServerSideEncryption: 'AES256', // ✅ Criptografia em repouso
       }, (err) => err ? reject(err) : resolve());
     });
 
@@ -380,11 +390,11 @@ class UserModel {
   _putJSON(key, obj) {
     return new Promise((resolve, reject) => {
       this._s3.putObject({
-        Bucket:      this.bucket,
-        Key:         key,
-        Body:        JSON.stringify(obj, null, 2),
-        ContentType: 'application/json',
-        ACL:         'private',
+        Bucket:               this.bucket,
+        Key:                  key,
+        Body:                 JSON.stringify(obj, null, 2),
+        ContentType:          'application/json',
+        ServerSideEncryption: 'AES256', // ✅ Criptografia em repouso
       }, (err, data) => err ? reject(err) : resolve(data));
     });
   }

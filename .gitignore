@@ -1,0 +1,13 @@
+# Credenciais — NUNCA versionar
+js/config/aws-config.js
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# Editores
+.vscode/
+.idea/
+
+# Git interno
+.git/
