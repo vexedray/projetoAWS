@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CRUD Usuários — S3 MVC</title>
+  <title>Cadastro de Usuários</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👤</text></svg>" />
 
   <!-- Google Fonts -->
@@ -55,8 +55,6 @@
       </div>
       <div class="header-right">
         <span class="badge badge-green">AWS S3</span>
-        <span class="badge badge-blue">MVC</span>
-        <span class="badge badge-purple">bcrypt</span>
         <button id="logoutBtn" class="btn btn-logout" title="Sair">🚪 Sair</button>
       </div>
     </header>
@@ -167,7 +165,7 @@
             Tem certeza que deseja excluir o usuário<br />
             <strong id="deleteNome"></strong>?
           </div>
-          <div class="delete-warn">Esta ação é irreversível. O JSON e a foto serão removidos do S3.</div>
+          <div class="delete-warn">Esta ação é irreversível. Deseja continuar?</div>
         </div>
         <div class="modal-footer">
           <button id="cancelDeleteBtn" class="btn btn-secondary">Cancelar</button>
