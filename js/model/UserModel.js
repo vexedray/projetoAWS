@@ -55,8 +55,25 @@ class UserModel {
 
   /** Gera UUID v4 via API nativa. */
   generateId() {
-    return crypto.randomUUID();
+    // crypto.randomUUID() só funciona em HTTPS
+    // Usar crypto.getRandomValues() que funciona em HTTP
+    var arr = new Uint8Array(16);
+    crypto.getRandomValues(arr);
+    arr[6] = (arr[6] & 0x0f) | 0x40; // versão 4
+    arr[8] = (arr[8] & 0x3f) | 0x80; // variante RFC4122
+    var hex = [];
+    for (var i = 0; i < 16; i++) {
+      hex.push(arr[i].toString(16).padStart(2, '0'));
+    }
+    return (
+      hex[0] + hex[1] + hex[2] + hex[3] + '-' +
+      hex[4] + hex[5] + '-' +
+      hex[6] + hex[7] + '-' +
+      hex[8] + hex[9] + '-' +
+      hex[10] + hex[11] + hex[12] + hex[13] + hex[14] + hex[15]
+    );
   }
+
 
   /** Key S3 do JSON do usuário. */
   buildUserKey(id) {

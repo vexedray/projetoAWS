@@ -17,7 +17,33 @@
 <body>
   <div class="grid-bg"></div>
 
-  <div class="container">
+  <!-- ═══════════════════════════════════════════════════
+       TELA DE LOGIN — aparece antes do app
+       ═══════════════════════════════════════════════════ -->
+  <section id="loginSection" class="login-section">
+    <div class="login-card">
+      <div class="login-logo">
+        <div class="logo-icon">👤</div>
+        <div class="logo-text">User<span>CRUD</span></div>
+      </div>
+      <p class="login-subtitle">Faça login para acessar o sistema</p>
+
+      <div class="login-form">
+        <div class="form-group">
+          <label for="loginEmail">Email</label>
+          <input type="email" id="loginEmail" placeholder="usuario@email.com" autocomplete="email" />
+        </div>
+        <div class="form-group">
+          <label for="loginSenha">Senha</label>
+          <input type="password" id="loginSenha" placeholder="Sua senha" autocomplete="current-password" />
+        </div>
+        <p id="loginError" class="login-error"></p>
+        <button id="loginBtn" class="btn btn-primary login-btn">🔐 &nbsp; Entrar</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="container" id="appContainer" style="display:none">
 
     <!-- ═══════════════════════════════════════════════════
          HEADER
@@ -31,6 +57,7 @@
         <span class="badge badge-green">AWS S3</span>
         <span class="badge badge-blue">MVC</span>
         <span class="badge badge-purple">bcrypt</span>
+        <button id="logoutBtn" class="btn btn-logout" title="Sair">🚪 Sair</button>
       </div>
     </header>
 
@@ -172,6 +199,7 @@
        6. UserController.js (class UserController)
        7. Bootstrap (instanciação)
        ═══════════════════════════════════════════════════ -->
+  <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js/dist/amazon-cognito-identity.min.js"></script>
   <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1472.0.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js"></script>
   <script src="js/config/aws-config.js"></script>
@@ -180,10 +208,95 @@
   <script src="js/controller/UserController.js"></script>
 
   <script>
-    /* ── Bootstrap: instancia as 3 camadas MVC ──────── */
-    const model      = new UserModel(AWS_CONFIG);
-    const view       = new UserView();
-    const controller = new UserController(model, view);
+    /* ── Bootstrap: autenticação + instanciação MVC ──── */
+    (function () {
+      var loginSection  = document.getElementById('loginSection');
+      var appContainer  = document.getElementById('appContainer');
+      var loginBtn      = document.getElementById('loginBtn');
+      var loginEmail    = document.getElementById('loginEmail');
+      var loginSenha    = document.getElementById('loginSenha');
+      var loginError    = document.getElementById('loginError');
+      var logoutBtn     = document.getElementById('logoutBtn');
+      var mvcIniciado   = false;
+
+      function mostrarApp() {
+        loginSection.style.display = 'none';
+        appContainer.style.display = '';
+        if (!mvcIniciado) {
+          mvcIniciado = true;
+          var model      = new UserModel(AWS_CONFIG);
+          var view       = new UserView();
+          var controller = new UserController(model, view);
+        }
+      }
+
+      function mostrarLogin() {
+        loginSection.style.display = '';
+        appContainer.style.display = 'none';
+      }
+
+      function setLoginLoading(on) {
+        loginBtn.disabled = on;
+        loginBtn.textContent = on ? 'Autenticando...' : '🔐  Entrar';
+      }
+
+      function mostrarErro(msg) {
+        loginError.textContent = msg;
+        loginError.classList.add('show');
+      }
+
+      function limparErro() {
+        loginError.textContent = '';
+        loginError.classList.remove('show');
+      }
+
+      /* Tenta restaurar sessão existente */
+      getSession().then(function (token) {
+        if (token) {
+          return configureCredentials(token).then(function () {
+            mostrarApp();
+          }).catch(function (err) {
+            console.error('Erro ao configurar credenciais:', err);
+            mostrarLogin();
+          });
+        }
+        mostrarLogin();
+      }).catch(function (err) {
+        console.error('Erro ao verificar sessão:', err);
+        mostrarLogin();
+      });
+
+      /* Login via botão */
+      loginBtn.addEventListener('click', function () {
+        limparErro();
+        var email = loginEmail.value.trim();
+        var senha = loginSenha.value;
+
+        if (!email || !senha) {
+          mostrarErro('Preencha email e senha.');
+          return;
+        }
+
+        setLoginLoading(true);
+        login(email, senha)
+          .then(function () { mostrarApp(); })
+          .catch(function (err) { mostrarErro(err.message); })
+          .then(function () { setLoginLoading(false); });
+      });
+
+      /* Login via Enter */
+      loginSenha.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') loginBtn.click();
+      });
+      loginEmail.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') loginBtn.click();
+      });
+
+      /* Logout */
+      logoutBtn.addEventListener('click', function () {
+        logout();
+      });
+    })();
   </script>
 </body>
 </html>

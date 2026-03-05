@@ -586,6 +586,139 @@ textarea { resize: vertical; min-height: 60px; }
 }
 
 /* ═══════════════════════════════════════════════════════
+   LOGIN SECTION
+   ═══════════════════════════════════════════════════════ */
+.login-section {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.login-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 2.5rem 2rem;
+  width: 100%;
+  max-width: 400px;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+
+.login-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.login-subtitle {
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 28px;
+  letter-spacing: 0.02em;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.login-form .form-group {
+  width: 100%;
+}
+
+.login-form label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.login-form input[type="email"],
+.login-form input[type="password"] {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 13px;
+  padding: 11px 14px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.login-form input[type="email"]:focus,
+.login-form input[type="password"]:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0,212,170,0.1);
+}
+
+.login-form input::placeholder {
+  color: var(--muted);
+}
+
+.login-btn {
+  width: 100%;
+  margin-top: 4px;
+  padding: 12px !important;
+  font-size: 13px !important;
+}
+
+.login-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.login-error {
+  color: var(--error);
+  font-size: 12px;
+  line-height: 1.5;
+  display: none;
+  margin: 0;
+  padding: 8px 12px;
+  background: rgba(255,68,102,0.08);
+  border: 1px solid rgba(255,68,102,0.15);
+  border-radius: var(--radius);
+}
+
+.login-error.show {
+  display: block;
+}
+
+/* ═══════════════════════════════════════════════════════
+   LOGOUT BUTTON
+   ═══════════════════════════════════════════════════════ */
+.btn-logout {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,68,102,0.25);
+  background: rgba(255,68,102,0.08);
+  color: var(--error);
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.02em;
+}
+
+.btn-logout:hover {
+  background: rgba(255,68,102,0.18);
+  border-color: rgba(255,68,102,0.4);
+}
+
+/* ═══════════════════════════════════════════════════════
    RESPONSIVE
    ═══════════════════════════════════════════════════════ */
 @media (max-width: 700px) {
@@ -601,4 +734,5 @@ textarea { resize: vertical; min-height: 60px; }
 @media (max-width: 480px) {
   .container { padding: 20px 12px; }
   .user-table .col-email { display: none; }
+  .login-card { padding: 1.5rem 1.2rem; }
 }
