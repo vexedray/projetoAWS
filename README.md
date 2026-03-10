@@ -90,6 +90,12 @@ aws s3 sync . s3://rayssa-borges --exclude ".git/*"
 
 4. Acesse o endpoint de site estático do bucket S3
 
+### Acesso
+
+- **URL:** http://rayssa-borges.s3-website.us-east-2.amazonaws.com/
+- **Email:** felipe.j@edu.sc.senai.com.br
+- **Senha:** Felipe123@
+
 ### Criar usuário no Cognito
 
 ```bash
